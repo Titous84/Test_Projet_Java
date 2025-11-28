@@ -27,13 +27,13 @@
     <center>
         <VBox spacing="10" padding="10">
             <children>
-                <TableView fx:id="tableParcelles" prefWidth="700" prefHeight="450">
+                <TableView fx:id="tableParcelles" prefWidth="720" prefHeight="450">
 
                     <columns>
-                        <TableColumn fx:id="colonneNom" text="Nom" prefWidth="200"/>
+                        <TableColumn fx:id="colonneNom" text="Nom" prefWidth="180"/>
                         <TableColumn fx:id="colonneSuperficie" text="Superficie (ha)" prefWidth="150"/>
-                        <TableColumn fx:id="colonneTypeSol" text="Type de sol" prefWidth="150"/>
-                        <TableColumn fx:id="colonneCulture" text="Culture actuelle" prefWidth="180"/>
+                        <TableColumn fx:id="colonneLocalisation" text="Localisation" prefWidth="180"/>
+                        <TableColumn fx:id="colonneCulture" text="Culture active" prefWidth="180"/>
                     </columns>
 
                 </TableView>
