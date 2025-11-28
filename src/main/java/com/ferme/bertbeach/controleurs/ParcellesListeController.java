@@ -1,19 +1,26 @@
 package com.ferme.bertbeach.controleurs;
 
-import com.ferme.bertbeach.modele.Parcelle;
+import com.ferme.bertbeach.domaine.GestionParcellesService;
+import com.ferme.bertbeach.domaine.Parcelle;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
+
+import java.util.Optional;
 
 /**
  * Contrôleur de l'écran principal listant les parcelles.
- * Cet écran sera le point d'entrée pour les CU :
+ * L'interface sert de point d'entrée aux cas d'utilisation :
  *  - CU01 : Ajouter / Modifier une parcelle
  *  - CU02 : Supprimer une parcelle
  *  - CU03 : Consulter une parcelle
@@ -32,55 +39,45 @@ public class ParcellesListeController {
     private TableColumn<Parcelle, Double> colonneSuperficie;
 
     @FXML
-    private TableColumn<Parcelle, String> colonneTypeSol;
+    private TableColumn<Parcelle, String> colonneLocalisation;
 
     @FXML
     private TableColumn<Parcelle, String> colonneCulture;
-
-    @FXML
-    private Button boutonAjouter;
-
-    @FXML
-    private Button boutonModifier;
-
-    @FXML
-    private Button boutonSupprimer;
-
-    @FXML
-    private Button boutonConsulter;
 
     // --- Données affichées dans la table ---
 
     private final ObservableList<Parcelle> parcelles = FXCollections.observableArrayList();
 
+    // --- Services métiers et contexte ---
+    private GestionParcellesService service;
+    private Stage scenePrincipale;
+
     /**
-     * Méthode appelée automatiquement par JavaFX après le chargement du FXML.
-     * On y initialise les colonnes et on charge des données de test (en attendant la BD).
+     * Méthode appelée par l'application (voir App.java) une fois le service disponible.
      */
-    @FXML
-    public void initialize() {
-        // Associer les colonnes aux propriétés de la classe Parcelle
+    public void initialiserAvecService(GestionParcellesService service, Stage stage) {
+        this.service = service;
+        this.scenePrincipale = stage;
+        configurerColonnes();
+        rafraichirTable();
+    }
+
+    /**
+     * Prépare l'association entre les colonnes du tableau et les propriétés de la classe métier.
+     */
+    private void configurerColonnes() {
         colonneNom.setCellValueFactory(new PropertyValueFactory<>("nom"));
-        colonneSuperficie.setCellValueFactory(new PropertyValueFactory<>("superficieHa"));
-        colonneTypeSol.setCellValueFactory(new PropertyValueFactory<>("typeSol"));
-        colonneCulture.setCellValueFactory(new PropertyValueFactory<>("cultureActuelle"));
-
-        // Pour l'instant : données de démonstration (en attendant le DAO SQLite)
-        parcelles.addAll(
-                new Parcelle(1, "Champ Nord", 4.5, "Limoneux", "Maïs", "Parcelle proche de la route"),
-                new Parcelle(2, "Prairie Est", 3.2, "Argileux", "Foin", "Drainage à vérifier"),
-                new Parcelle(3, "Champ Sud", 5.8, "Sableux", "Soja", "Historique de rendement variable")
-        );
-
+        colonneSuperficie.setCellValueFactory(new PropertyValueFactory<>("superficieHectares"));
+        colonneLocalisation.setCellValueFactory(new PropertyValueFactory<>("localisation"));
+        colonneCulture.setCellValueFactory(new PropertyValueFactory<>("cultureActive"));
         tableParcelles.setItems(parcelles);
     }
 
     // --- Gestion des actions des boutons ---
-    // Pour l'instant : simple affichage de messages. On branchera les vraies logiques CU01–02–03 ensuite.
 
     @FXML
     private void onAjouterParcelle(ActionEvent event) {
-        afficherInfo("Ajouter", "Ouverture du formulaire d'ajout (CU01) – à implémenter.");
+        afficherFormulaireEdition(null);
     }
 
     @FXML
@@ -90,7 +87,7 @@ public class ParcellesListeController {
             afficherErreurSelection();
             return;
         }
-        afficherInfo("Modifier", "Ouverture du formulaire de modification pour : " + selection.getNom());
+        afficherFormulaireEdition(selection);
     }
 
     @FXML
@@ -101,10 +98,16 @@ public class ParcellesListeController {
             return;
         }
 
-        // Pour l'instant, on supprime directement dans la liste.
-        // Plus tard, on branchera sur le DAO (CU02).
-        parcelles.remove(selection);
-        afficherInfo("Supprimer", "Parcelle supprimée (simulation, pas encore de BD) : " + selection.getNom());
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Suppression de parcelle (CU02)");
+        confirmation.setHeaderText("Confirmer la suppression");
+        confirmation.setContentText("Supprimer définitivement la parcelle \"" + selection.getNom() + "\" ?");
+        Optional<ButtonType> choix = confirmation.showAndWait();
+        if (choix.isPresent() && choix.get() == ButtonType.OK) {
+            service.supprimerParcelle(selection.getIdentifiant());
+            rafraichirTable();
+            afficherInfo("Parcelle supprimée", "La parcelle a été retirée du référentiel.");
+        }
     }
 
     @FXML
@@ -115,15 +118,16 @@ public class ParcellesListeController {
             return;
         }
 
-        // Plus tard : on ouvrira une fenêtre de consultation détaillée (historique, etc.)
-        afficherInfo(
-                "Consulter",
-                "Consultation de la parcelle :\n" +
-                        "- Nom : " + selection.getNom() + "\n" +
-                        "- Superficie : " + selection.getSuperficieHa() + " ha\n" +
-                        "- Type de sol : " + selection.getTypeSol() + "\n" +
-                        "- Culture : " + selection.getCultureActuelle()
-        );
+        Alert details = new Alert(Alert.AlertType.INFORMATION);
+        details.setTitle("Consultation d'une parcelle (CU03)");
+        details.setHeaderText(selection.getNom());
+        details.setContentText(
+                "Identifiant : " + selection.getIdentifiant() + "\n" +
+                        "Superficie : " + selection.getSuperficieHectares() + " ha\n" +
+                        "Localisation : " + selection.getLocalisation() + "\n" +
+                        "Culture active : " + selection.getCultureActive() + "\n" +
+                        "Historique : " + selection.getHistoriqueCulture());
+        details.showAndWait();
     }
 
     // --- Méthodes utilitaires privées ---
@@ -142,5 +146,76 @@ public class ParcellesListeController {
         alerte.setHeaderText(null);
         alerte.setContentText(message);
         alerte.showAndWait();
+    }
+
+    /**
+     * Ouvre un petit formulaire pour créer ou mettre à jour une parcelle (CU01).
+     */
+    private void afficherFormulaireEdition(Parcelle parcelleExistante) {
+        Alert dialogue = new Alert(Alert.AlertType.NONE);
+        dialogue.initOwner(scenePrincipale);
+        dialogue.setTitle(parcelleExistante == null ? "Ajouter une parcelle" : "Modifier une parcelle");
+        dialogue.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        TextField champNom = new TextField(parcelleExistante != null ? parcelleExistante.getNom() : "");
+        TextField champSuperficie = new TextField(parcelleExistante != null ? String.valueOf(parcelleExistante.getSuperficieHectares()) : "");
+        TextField champLocalisation = new TextField(parcelleExistante != null ? parcelleExistante.getLocalisation() : "");
+        TextField champCulture = new TextField(parcelleExistante != null ? parcelleExistante.getCultureActive() : "");
+        TextArea champHistorique = new TextArea(parcelleExistante != null ? parcelleExistante.getHistoriqueCulture() : "");
+        champHistorique.setPromptText("Historique cultural (rotations, événements notables...)");
+        champHistorique.setWrapText(true);
+
+        GridPane grille = new GridPane();
+        grille.setHgap(10);
+        grille.setVgap(10);
+        grille.addRow(0, new javafx.scene.control.Label("Nom"), champNom);
+        grille.addRow(1, new javafx.scene.control.Label("Superficie (ha)"), champSuperficie);
+        grille.addRow(2, new javafx.scene.control.Label("Localisation"), champLocalisation);
+        grille.addRow(3, new javafx.scene.control.Label("Culture active"), champCulture);
+        grille.addRow(4, new javafx.scene.control.Label("Historique"), champHistorique);
+        dialogue.getDialogPane().setContent(grille);
+
+        Optional<ButtonType> resultat = dialogue.showAndWait();
+        if (resultat.isEmpty() || resultat.get() == ButtonType.CANCEL) {
+            return; // l'utilisateur annule, aucune action.
+        }
+
+        try {
+            double superficie = Double.parseDouble(champSuperficie.getText());
+            if (parcelleExistante == null) {
+                // Création
+                Parcelle nouvelle = new Parcelle(
+                        champNom.getText(),
+                        superficie,
+                        champLocalisation.getText(),
+                        champCulture.getText(),
+                        champHistorique.getText()
+                );
+                service.ajouterOuModifierParcelle(nouvelle);
+            } else {
+                // Mise à jour
+                parcelleExistante.mettreAJour(
+                        champNom.getText(),
+                        superficie,
+                        champLocalisation.getText(),
+                        champCulture.getText(),
+                        champHistorique.getText()
+                );
+                service.ajouterOuModifierParcelle(parcelleExistante);
+            }
+            rafraichirTable();
+            afficherInfo("Parcelle sauvegardée", "Les informations ont été enregistrées.");
+        } catch (NumberFormatException e) {
+            afficherInfo("Valeur incorrecte", "La superficie doit être un nombre (ex : 4.5).");
+        } catch (IllegalArgumentException e) {
+            afficherInfo("Validation", e.getMessage());
+        }
+    }
+
+    /**
+     * Recharge les données depuis le service applicatif.
+     */
+    private void rafraichirTable() {
+        parcelles.setAll(service.listerParcelles());
     }
 }
