@@ -21,7 +21,15 @@ public class App {
         launch(args);
     }
 
+    private GestionParcellesService service;
+
+    public static void main(String[] args) {
+        // Appel explicite à l'utilitaire JavaFX pour lever l'ambiguïté sur la méthode statique
+        Application.launch(App.class, args);
+    }
+
     @Override
+    @SuppressWarnings("unused") // Méthode appelée par le cycle de vie JavaFX
     public void start(Stage stage) throws Exception {
         // Couche domaine + dépôt en mémoire (remplaçable par une BD ultérieurement)
         this.service = new GestionParcellesService(new ParcelleMemoireRepository());
