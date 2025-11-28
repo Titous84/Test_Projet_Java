@@ -13,7 +13,7 @@ import javafx.stage.Stage;
  * Point d'entrée JavaFX. Cette classe prépare le service métier et injecte les données
  * initiales dans la vue pour permettre de démontrer les cas d'utilisation CU01 à CU03.
  */
-public class App extends Application {
+public class App {
 
     private GestionParcellesService service;
 
