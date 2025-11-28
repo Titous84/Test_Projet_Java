@@ -10,6 +10,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+
 /**
  * Point d'entrée graphique basé sur JavaFX. L'application charge une interface
  * utilisateur en français permettant d'exécuter les cas d'utilisation :
@@ -20,7 +22,9 @@ import javafx.stage.Stage;
  * Le reste du code métier reste identique à la version console. Seul l'usage
  * change : l'utilisateur remplit désormais un formulaire plutôt que la console.
  */
-public class App extends Application {
+public class App {
+
+    private GestionParcellesService service;
 
     private GestionParcellesService service;
 
