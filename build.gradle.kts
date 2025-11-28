@@ -1,5 +1,4 @@
 plugins {
-    id("java")
     id("application")
     id("org.openjfx.javafxplugin") version "0.1.0"
 }
@@ -18,32 +17,31 @@ java {
 }
 
 dependencies {
-    // === JUnit 5 ===
+    // Tests JUnit 5
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 javafx {
-    // Version JavaFX
-    version = "23"
-
-    // Modules nécessaires à ton projet
-    modules = listOf(
-        "javafx.controls",
-        "javafx.fxml"
-    )
+    version = "25"
+    modules = listOf("javafx.controls", "javafx.fxml")
 }
 
 application {
-    // Point d’entrée de ton application JavaFX
     mainClass.set("com.ferme.bertbeach.App")
+
+    /**
+     * ⚠️ FIX OFFICIEL POUR JAVAFX EN KOTLIN DSL
+     * L'astuce consiste à récupérer le module-path réel à partir de la configuration "runtimeClasspath".
+     */
+    applicationDefaultJvmArgs = listOf(
+        "--module-path",
+        configurations.runtimeClasspath.get().asPath,
+        "--add-modules",
+        "javafx.controls,javafx.fxml"
+    )
 }
 
 tasks.test {
     useJUnitPlatform()
-}
-
-tasks.named<JavaExec>("run") {
-    // Permet l’utilisation de System.in dans la console IntelliJ
-    standardInput = System.`in`
 }
