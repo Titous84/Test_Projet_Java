@@ -22,7 +22,7 @@ import java.io.IOException;
  * Le reste du code métier reste identique à la version console. Seul l'usage
  * change : l'utilisateur remplit désormais un formulaire plutôt que la console.
  */
-public class App extends Application {
+public class App {
 
     private GestionParcellesService service;
 
