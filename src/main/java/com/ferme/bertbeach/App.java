@@ -26,12 +26,14 @@ public class App {
 
     private GestionParcellesService service;
 
+    private GestionParcellesService service;
+
     /**
      * Méthode standard JavaFX appelée après le lancement. On charge la vue FXML,
      * on injecte le service métier et on présente la fenêtre principale.
      */
     @Override
-    public void start(Stage stage) throws IOException {
+    public void start(Stage stage) throws Exception {
         // Initialisation du domaine avec un dépôt en mémoire et une donnée de démonstration.
         service = new GestionParcellesService(new ParcelleMemoireRepository());
         service.ajouterOuModifierParcelle(new Parcelle(
@@ -54,6 +56,6 @@ public class App {
     public static void main(String[] args) {
         // Lance le cycle de vie JavaFX. "App" étant la classe Application, JavaFX
         // retrouvera automatiquement la méthode start(Stage).
-        Application.launch(App.class, args);
+        launch(args);
     }
 }
